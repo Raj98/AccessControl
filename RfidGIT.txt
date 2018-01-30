@@ -1,0 +1,197 @@
+#include <LiquidCrystal.h>
+#include <SPI.h>
+#include <RFID.h>
+
+#define SS_PIN 53
+#define RST_PIN 5
+#define rs 44
+#define en 45
+#define d4 46
+#define d5 47
+#define d6 48
+#define d7 49
+#define door 9
+#define light 22
+
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
+RFID rfid(SS_PIN,RST_PIN);
+
+int count = 0;
+bool id[16] ={0};
+int found = -1;
+
+int data[50][5] = {
+  {155,117,513,204,17},       //JO 1
+  {53, 21, 2152, 235, 28},    //BO 2
+  {187, 32, 537, 204, 110},   //TA 3
+  {213 ,73 ,2172, 235 ,174},  //MA 4
+  {245, 122, 2411, 235, 183}, //PR 5
+  {211, 0, 2533, 48, 10},     //KO 6
+  {85, 244, 2113, 235, 159},  //RA 7
+  {53, 52, 2315, 235, 61},    //VA 8
+  {67, 164, 7230, 48, 49},    //AA 9
+  {219, 94, 511, 204, 122},   //SA 10
+  {197, 6, 2101, 235, 251},   //AF 11
+  {197, 206, 188, 145, 136},  //VA 12
+  {21, 55, 228, 145, 165},    //RA 13
+  {219, 183, 542, 204, 148},  //AN 14
+  {227, 29, 123, 34, 209},    //IN 15 
+  {59, 152, 513, 204, 90}     //AR 16
+}; 
+
+void setup() {
+  // put your setup code here, to run once:
+    Serial.begin(9600);
+    lcd.begin(16,2);
+    SPI.begin();
+    rfid.init();
+    pinMode(door,OUTPUT);
+    pinMode(light,OUTPUT);
+
+    digitalWrite(light,LOW);
+    digitalWrite(door,LOW);
+}
+
+void loop() {
+ found = -1;
+ digitalWrite(door,LOW);
+
+ 
+  if(rfid.isCard()){
+        if(rfid.readCardSerial()){
+            Serial.print(rfid.serNum[0]);
+            Serial.print(" ");
+            Serial.print(rfid.serNum[1]);
+            Serial.print(" ");
+            Serial.print(rfid.serNum[2]);
+            Serial.print(" ");
+            Serial.print(rfid.serNum[3]);
+            Serial.print(" ");
+            Serial.print(rfid.serNum[4]);
+            Serial.println(" ");
+            rfid.halt();
+    
+
+ for(int i=0; i<16; i++){
+  found = i;
+  for(int j=0; j<5; j++){
+    if(found == -1)
+    break;
+    if(rfid.serNum[j] == data[i][j]){
+    found = i;
+    }
+    else
+    found = -1;
+  }
+  if(found != -1){
+  if(!id[found]){
+  count++;
+  id[found] = 1;
+  }
+  else{
+  count--;
+  id[found] = 0;
+  }
+  digitalWrite(door,HIGH);
+  delay(200);
+  digitalWrite(door,LOW);
+  break;
+  }
+}
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("COUNTER: ");
+    lcd.print(count);
+    lcd.setCursor(0,1);
+    switch(found)
+    {
+       case 0:
+       lcd.print("Jo");
+       break;
+       
+       case 1:
+       lcd.print("Bo");
+       break;
+       
+       case 2:
+       lcd.print("Ta");
+       break;
+       
+       case 3:
+       lcd.print("Ma");
+       break;
+       
+       case 4:
+       lcd.print("Pr");
+       break;
+       
+       case 5:
+       lcd.print("Ku");
+       break;
+       
+       case 6:
+       lcd.print("Ra");
+       break;
+       
+       case 7:
+       lcd.print("Va");
+       break;
+       
+       case 8:
+       lcd.print("Aa");
+       break;
+       
+       case 9:
+       lcd.print("Sa");
+       break;
+       
+       case 10:
+       lcd.print("Af");
+       break;
+       
+       case 11:
+       lcd.print("Va");
+       break;
+       
+       case 12:
+       lcd.print("Ra");
+       break;
+       
+       case 13:
+       lcd.print("An");
+       break;
+       
+       case 14:
+       lcd.print("In");
+       break;
+       
+       case 15:
+       lcd.print("Ar");
+       break;
+       
+       default:
+       lcd.print("Access Denied!!!");
+    }
+    Serial.print("The ID of the person is: ");
+    Serial.println(found+1);
+ 
+    delay(1000);
+    
+        }
+  }
+  else
+  {
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("COUNTER: ");
+    lcd.print(count);
+    lcd.setCursor(0,1);
+    lcd.print("LAB!!!");
+    delay(100);
+  }
+  if(count == 0)
+ digitalWrite(light,LOW);
+ else
+ digitalWrite(light,HIGH);
+ 
+}
